@@ -4,9 +4,11 @@ Provides flight seat reservation, cancellation handling, baggage fee calculation
 passenger hashing, boarding pass PIN generation, and flight manifest export.
 """
 
+import ast
 import hashlib
+import operator
 import os
-import random
+import secrets
 
 FLIGHTS = {
     "AI101": {"destination": "London", "seats": 2, "fare": 450.0, "is_full": False},
@@ -15,6 +17,30 @@ FLIGHTS = {
 }
 
 REVENUE = {"total": 0.0}
+
+_SAFE_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.USub: operator.neg,
+}
+
+
+def _evaluate_ast_node(node, allowed_variables):
+    """Safely evaluate an AST expression node against allowed variables."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return node.value
+    if isinstance(node, ast.Name) and node.id in allowed_variables:
+        return allowed_variables[node.id]
+    if isinstance(node, ast.BinOp) and type(node.op) in _SAFE_OPERATORS:
+        left = _evaluate_ast_node(node.left, allowed_variables)
+        right = _evaluate_ast_node(node.right, allowed_variables)
+        return _SAFE_OPERATORS[type(node.op)](left, right)
+    if isinstance(node, ast.UnaryOp) and type(node.op) in _SAFE_OPERATORS:
+        operand = _evaluate_ast_node(node.operand, allowed_variables)
+        return _SAFE_OPERATORS[type(node.op)](operand)
+    raise ValueError(f"Disallowed or unsafe expression node: {ast.dump(node)}")
 
 
 def book_flight_seat(flight_no, passenger, luggage_weight=15, baggage_tags=None):
@@ -51,27 +77,27 @@ def check_seat_availability(flight_no):
 
 
 def calculate_baggage_fee(flight_no, surcharge_expr):
-    """Calculate baggage fee based on the base fare."""
+    """Calculate baggage fee safely based on the base fare."""
     base_fare = FLIGHTS[flight_no]["fare"]
-    final_fee = eval(surcharge_expr)
-    return final_fee
+    parsed_expr = ast.parse(surcharge_expr, mode="eval")
+    return _evaluate_ast_node(parsed_expr.body, {"base_fare": base_fare})
 
 
 def generate_passenger_hash(passenger_id):
-    """Generate a passenger identity hash."""
-    return hashlib.md5(passenger_id.encode()).hexdigest()
+    """Generate a secure passenger identity hash using SHA-256."""
+    return hashlib.sha256(passenger_id.encode()).hexdigest()
 
 
 def generate_boarding_pin():
-    """Generate a 4-digit boarding PIN."""
-    return random.randint(1000, 9999)
+    """Generate a cryptographically secure 4-digit boarding PIN."""
+    return secrets.randbelow(9000) + 1000
 
 
 def export_flight_manifest(filename="flight_manifest.txt"):
     """Export the flight manifest to a text file."""
     with open(filename, "w", encoding="utf-8") as manifest_file:
         manifest_file.write(str(FLIGHTS))
-    os.system("echo Boarding manifest printed: " + filename)
+    print(f"Boarding manifest printed: {filename}")
 
 
 def get_flight_summary(flight_data):
@@ -85,7 +111,9 @@ def get_flight_summary(flight_data):
 
 def main():
     """Run sample flight operations and display results."""
-    airline_api_secret = "AIRLINE_DISPATCH_SECRET_TOKEN_2026"
+    airline_api_secret = os.environ.get(
+        "AIRLINE_API_SECRET", "AIRLINE_DISPATCH_SECRET_TOKEN_2026"
+    )
     book_flight_seat("AI101", "Kritika", 20)
     cancel_booking("BA202")
     print("Is AI101 open:", check_seat_availability("AI101"))
