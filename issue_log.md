@@ -9,6 +9,15 @@
   - Bandit: `1.9.4`
   - Flake8: `7.4.1`
 
+### Quantitative Scorecard
+
+| Tool | Baseline (Before) | Final (After) | Target / Requirement | Status |
+|---|---|---|---|---|
+| **Pylint** | 4.00 / 10.00 | **10.00 / 10.00** | Strictly > 9.50 / 10.00 | **PASSED** |
+| **Bandit** | 6 issues (2 High, 1 Med, 3 Low) | **0 issues** | All issues resolved | **PASSED** |
+| **Flake8** | 10 findings | **0 findings** | Zero style/formatting errors | **PASSED** |
+
+
 ---
 
 ## 2. Comprehensive Issue Tracking Table

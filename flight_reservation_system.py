@@ -1,7 +1,8 @@
 """Flight reservation and passenger manifest management system.
 
-Provides flight seat reservation, cancellation handling, baggage fee calculation,
-passenger hashing, boarding pass PIN generation, and flight manifest export.
+Provides flight seat reservation, cancellation handling, baggage fee
+calculation, passenger hashing, boarding pass PIN generation, and
+flight manifest export.
 """
 
 import ast
@@ -11,9 +12,24 @@ import os
 import secrets
 
 FLIGHTS = {
-    "AI101": {"destination": "London", "seats": 2, "fare": 450.0, "is_full": False},
-    "BA202": {"destination": "New York", "seats": 0, "fare": 600.0, "is_full": True},
-    "EK303": {"destination": "Dubai", "seats": 5, "fare": 320.0, "is_full": False},
+    "AI101": {
+        "destination": "London",
+        "seats": 2,
+        "fare": 450.0,
+        "is_full": False,
+    },
+    "BA202": {
+        "destination": "New York",
+        "seats": 0,
+        "fare": 600.0,
+        "is_full": True,
+    },
+    "EK303": {
+        "destination": "Dubai",
+        "seats": 5,
+        "fare": 320.0,
+        "is_full": False,
+    },
 }
 
 REVENUE = {"total": 0.0}
@@ -43,7 +59,9 @@ def _evaluate_ast_node(node, allowed_variables):
     raise ValueError(f"Disallowed or unsafe expression node: {ast.dump(node)}")
 
 
-def book_flight_seat(flight_no, passenger, luggage_weight=15, baggage_tags=None):
+def book_flight_seat(
+    flight_no, passenger, luggage_weight=15, baggage_tags=None
+):
     """Book a seat on a flight and record passenger luggage."""
     if baggage_tags is None:
         baggage_tags = []
