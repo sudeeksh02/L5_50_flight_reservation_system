@@ -1,0 +1,17 @@
+# Flight Reservation System — Identified Issues
+
+The following table documents the static code analysis issues identified in `flight_reservation_system.py`, prioritized by severity (High and Medium first, followed by Low and Code Quality/Style issues):
+
+| Issue | Type | Line(s) | Description | Fix Approach |
+|---|---|---|---|---|
+| Command Injection | Security (Bandit B605, High) | 63 | `os.system("echo Boarding manifest printed: " + filename)` executes shell commands with string concatenation, allowing arbitrary command execution if filename is manipulated. | Replace subshell invocation with safe native Python `print()` statement. |
+| Weak Cryptographic Hash | Security (Bandit B324, High) | 52 | Use of insecure and collision-vulnerable `hashlib.md5()` algorithm for hashing passenger credentials. | Upgrade passenger identity hash algorithm to `hashlib.sha256()`. |
+| Arbitrary Code Execution (Eval) | Security / Quality (Bandit B307, Medium / Pylint W0123) | 47 | Use of `eval(surcharge_expr)` executes arbitrary code, allowing remote code execution through surcharge input expressions. | Parse mathematical expressions safely using Python's `ast` module with an operator and variable whitelist (`base_fare`). |
+| Insecure Pseudo-Random Number Generator | Security (Bandit B311, Low) | 56 | `random.randint(1000, 9999)` relies on Mersenne Twister, which is predictable and unsuitable for security credentials (boarding PINs). | Utilize the cryptographically secure `secrets` module (`secrets.randbelow(9000) + 1000`). |
+| Hardcoded API Credential | Security (Bandit B105, Low) | 75 | Hardcoded API secret literal `AIRLINE_DISPATCH_SECRET_TOKEN_2026` stored directly in source code. | Read token from environment variable `os.environ.get("AIRLINE_API_SECRET", ...)` with optional development fallback. |
+| Bare Exception Handler | Security / Quality / Style (Bandit B110 / Pylint W0702 / Flake8 E722) | 31 | `except:` with `pass` silently swallows all exceptions, including `KeyboardInterrupt` and critical syntax/runtime errors. | Replace with explicit, expected exception handling: `except KeyError: pass`. |
+| Mutable Default Argument | Bug / Quality (Pylint W0102) | 15 | `baggage_tags=[]` retains mutated state across successive function calls, causing baggage tags to bleed between passengers. | Set default value to `None` and initialize `baggage_tags = []` inside function body when `None`. |
+| Unclosed File Resource & Encoding | Quality (Pylint R1732, W1514) | 60 | `open()` without a context manager (`with`) risks resource leaks, and omitting `encoding` leads to platform-dependent errors. | Use `with open(filename, "w", encoding="utf-8") as manifest_file:`. |
+| Unused Imports and Variables | Quality / Style (Pylint W0611, W0612 / Flake8 F401, F841) | 4, 36, 46, 68 | `import math` and variables `airport_fee`, `base_fare`, loop key `f` are declared/assigned but never utilized. | Remove unused import and variables; iterate `.values()` directly in dictionary loop. |
+| Missing Docstrings & Non-PEP 8 Naming | Quality / Style (Pylint C0114, C0116, C0103) | 1, 15, 27, 35, 45, 51, 55, 59, 66, 74 | Missing module/function docstrings and camelCase function identifiers violate PEP 8 conventions. | Add descriptive docstrings and rename functions to `snake_case`. |
+| Long Lines & Missing Final Newline | Style (Flake8 E501, W292 / Pylint C0301, C0304) | 7, 8, 9, 23, 87 | Dictionary lines and messages exceed 79 characters; missing POSIX newline at end of file. | Wrap long lines and add trailing POSIX newline. |
